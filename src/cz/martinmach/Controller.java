@@ -13,7 +13,9 @@ public class Controller {
 
     private final List<RealVector> negative;
     private final List<RealVector> positive;
-    private final List<RealVector> test;
+    private final List<RealVector> testNegative = new ArrayList<>();
+    private final List<RealVector> testPositive = new ArrayList<>();
+    private final List<SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>>> supportVectors;
 
     public Controller() {
         List<RealVector> negative = new ArrayList<RealVector>() {{
@@ -43,14 +45,17 @@ public class Controller {
 
         this.negative = negative;
         this.positive = positive;
-        this.test = test;
-
 
         SupportVectorMachine svm = new SupportVectorMachine();
         svm.train(negative, positive);
+        this.supportVectors = svm.getSupportVectors();
         for (RealVector t : test) {
-            double[] pos = t.toArray();
-            System.out.println("Test: " + pos[0] + ":" + pos[1] + " -> "  + svm.classify(t));
+            SupportVectorMachine.Classification classification = svm.classify(t);
+            if(classification.equals(SupportVectorMachine.Classification.POSITIVE)) {
+                this.testPositive.add(t);
+            } else {
+                this.testNegative.add(t);
+            }
         }
     }
 
@@ -62,7 +67,15 @@ public class Controller {
         return positive;
     }
 
-    public List<RealVector> getTest() {
-        return test;
+    public List<RealVector> getTestNegative() {
+        return testNegative;
+    }
+
+    public List<RealVector> getTestPositive() {
+        return testPositive;
+    }
+
+    public List<SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>>> getSupportVectors() {
+        return this.supportVectors;
     }
 }

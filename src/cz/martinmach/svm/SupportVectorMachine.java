@@ -31,8 +31,40 @@ public class SupportVectorMachine {
         NEGATIVE,
     }
 
+    public class Tuple<T> {
+        public Tuple(T first, T second) {
+            this.first = first;
+            this.second = second;
+        }
+        public final T first;
+        public final T second;
+    }
+
     public SupportVectorMachine() {
 
+    }
+
+    public List<Tuple<Tuple<Double>>> getSupportVectors(){
+        List<Tuple<Tuple<Double>>> ret = new ArrayList<>();
+
+        double min = this.min * 0.9;
+        double max = this.max * 1.1;
+
+        Tuple<Tuple<Double>> p1 = new Tuple<>(new Tuple<Double>(min, max), new Tuple(this.hyperplane(min, 1), this.hyperplane(max, 1)));
+        ret.add(p1);
+
+        Tuple<Tuple<Double>> pm1 = new Tuple<>(new Tuple<Double>(min, max), new Tuple(this.hyperplane(min, -1), this.hyperplane(max, -1)));
+        ret.add(pm1);
+
+        Tuple<Tuple<Double>> p = new Tuple<>(new Tuple<Double>(min, max), new Tuple(this.hyperplane(min, 0), this.hyperplane(max, 0)));
+        ret.add(p);
+
+        return ret;
+    }
+
+    protected double hyperplane(double x, int v) {
+        double[] array = this.w.toArray();
+        return (-array[0]*x-this.b+v) / array[1];
     }
 
     public void train(List<RealVector> negative, List<RealVector> positive) {
@@ -40,7 +72,6 @@ public class SupportVectorMachine {
         this.positive = positive;
 
         HashMap<Double, OptDictItem> optDict = new LinkedHashMap<>();
-        List<Double> allData = new ArrayList<Double>();
         List<RealVector> merged = new ArrayList<>(negative);
         merged.addAll(positive);
 
@@ -50,8 +81,6 @@ public class SupportVectorMachine {
         for (RealVector vector : merged) {
             double[] array = vector.toArray();
             for (double item : array) {
-                allData.add(item);
-
                 if (item > max) {
                     max = item;
                 } else if (item < min) {
@@ -70,6 +99,7 @@ public class SupportVectorMachine {
         double bMultiple = 5;
         double latestOptimum = this.max * 10;
         boolean optimized;
+        int counter = 0;
 
         for (double step : stepSizes) {
             RealVector w2 = new ArrayRealVector(new double[]{latestOptimum, latestOptimum});
@@ -82,29 +112,31 @@ public class SupportVectorMachine {
                         step * bMultiple
                 );
 
-                for (double s : steps) {
+                for (double b2 : steps) {
                     for (double[] transformation : TRANSFORMS) {
-                        double[] wt = this.arrayScale(transformation, w2.toArray());
+                        double[] wt = this.arrayScale(w2.toArray(), transformation);
                         RealVector wtv = new ArrayRealVector(wt);
                         boolean foundOption = true;
 
                         for (RealVector xi : negative) {
+                            double re = (-1) * (wtv.dotProduct(xi) + b2);
 
-                            if (!((-1) * wtv.dotProduct(xi) + s >= 1)) {
+                            if (!(re >= 1)) {
                                 foundOption = false;
                             }
                         }
 
                         for (RealVector xi : positive) {
+                            double re = 1 * (wtv.dotProduct(xi) + b2);
 
-                            if (wtv.dotProduct(xi) + s >= 1) {
+                            if (!(re >= 1)) {
                                 foundOption = false;
                             }
                         }
 
                         if(foundOption) {
                             OptDictItem item = new OptDictItem();
-                            item.b = s;
+                            item.b = b2;
                             item.wt = wtv;
                             double norm = wtv.getNorm();
                             optDict.put(norm, item);
