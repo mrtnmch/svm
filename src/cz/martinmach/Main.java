@@ -46,6 +46,12 @@ public class Main extends Application {
         XYChart.Series series5 = new XYChart.Series();
         series5.setName("Vector");
 
+        XYChart.Series series6 = new XYChart.Series();
+        series6.setName("Vector+1");
+
+        XYChart.Series series7 = new XYChart.Series();
+        series7.setName("Vector-1");
+
         FXMLLoader loader = new FXMLLoader(getClass().getResource(
                 "sample.fxml"));
         Parent root = (Parent) loader.load();
@@ -75,9 +81,17 @@ public class Main extends Application {
         series5.getData().add(new XYChart.Data<>(tuple.first.first, tuple.second.first));
         series5.getData().add(new XYChart.Data<>(tuple.first.second, tuple.second.second));
 
+        SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>> tuple0 = controller.getSupportVectors().get(0);
+        series6.getData().add(new XYChart.Data<>(tuple0.first.first, tuple0.second.first));
+        series6.getData().add(new XYChart.Data<>(tuple0.first.second, tuple0.second.second));
+
+        SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>> tuple1 = controller.getSupportVectors().get(1);
+        series7.getData().add(new XYChart.Data<>(tuple1.first.first, tuple1.second.first));
+        series7.getData().add(new XYChart.Data<>(tuple1.first.second, tuple1.second.second));
+
         sc.setAnimated(false);
         sc.setCreateSymbols(true);
-        sc.getData().addAll(series1, series2, series3, series4, series5);
+        sc.getData().addAll(series1, series2, series3, series4, series5, series6, series7);
         Scene scene  = new Scene(sc, 500, 400);
         scene.getStylesheets().add(getClass().getResource("graph.css").toExternalForm());
         stage.setScene(scene);
