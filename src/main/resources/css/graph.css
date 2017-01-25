@@ -33,3 +33,11 @@
 .default-color4.chart-legend-item-symbol{
     -fx-background-color: blue;
 }
+
+.default-color5.chart-line-symbol {
+    -fx-background-color: greenyellow;
+}
+
+.default-color6.chart-line-symbol {
+    -fx-background-color: yellow;
+}
