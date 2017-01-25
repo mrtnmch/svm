@@ -67,7 +67,7 @@ public class SupportVectorMachine {
         return (-array[0]*x-this.b+v) / array[1];
     }
 
-    public void train(List<RealVector> negative, List<RealVector> positive) {
+    public void train(List<RealVector> negative, List<RealVector> positive, int precisionSteps) throws SolutionNotFoundException {
         this.negative = negative;
         this.positive = positive;
 
@@ -89,17 +89,22 @@ public class SupportVectorMachine {
             }
         }
 
-        Double[] stepSizes = {
+        Double[] stepSizes2 = {
                 this.max * 0.1,
                 this.max * 0.01,
                 this.max * 0.001,
+                this.max * 0.0001,
         };
+
+        Double[] stepSizes = new Double[precisionSteps];
+        for (int i = 1; i <= precisionSteps; i++) {
+            stepSizes[i - 1] = Math.pow(0.1, i) * this.max;
+        }
 
         double bRangeMultiple = 5;
         double bMultiple = 5;
         double latestOptimum = this.max * 10;
         boolean optimized;
-        int counter = 0;
 
         for (double step : stepSizes) {
             RealVector w2 = new ArrayRealVector(new double[]{latestOptimum, latestOptimum});
@@ -146,7 +151,6 @@ public class SupportVectorMachine {
 
                 if(w2.toArray()[0] < 0) {
                     optimized = true;
-                    System.out.println("Optimized a step.");
                 } else {
                     w2 = this.addToVector(w2, -step);
                 }
@@ -155,13 +159,18 @@ public class SupportVectorMachine {
             OptDictItem choice = this.getChoice(optDict);
             this.w = choice.wt;
             this.b = choice.b;
-            latestOptimum = w2.toArray()[0] + step * 2;
+            latestOptimum = this.w.toArray()[0] + step * 2;
         }
     }
 
-    private OptDictItem getChoice(HashMap<Double, OptDictItem> optDict) {
+    private OptDictItem getChoice(HashMap<Double, OptDictItem> optDict) throws SolutionNotFoundException {
+        if(optDict.size() == 0) {
+            throw new SolutionNotFoundException();
+        }
+
         Double min = new ArrayList<>(optDict.keySet()).get(0);
         for (Double key : optDict.keySet()) {
+
             if(key < min) {
                 min = key;
             }
@@ -200,7 +209,6 @@ public class SupportVectorMachine {
     public Classification classify(RealVector feature) {
         double result = feature.dotProduct(this.w) + this.b;
         double[] pos = feature.toArray();
-        System.out.println("Test: " + pos[0] + ":" + pos[1] + " -> "  + result);
         return result < 0 ? Classification.NEGATIVE : Classification.POSITIVE;
     }
 
