@@ -38,7 +38,7 @@ public class Controller {
     private SupportVectorMachine svm;
     private LineChart<Number, Number> sc;
     private BorderPane pane;
-    private ListView<String> traningDataList;
+    private ListView<String> trainingDataList;
     private TrainingData trainingData;
     private StackPane stackPane;
     private Button trainButton;
@@ -48,6 +48,8 @@ public class Controller {
     private Button buttonTesting;
 
     private static final String TITLE = "SVM";
+    private XYChart.Series testPositiveSeries;
+    private XYChart.Series testNegativeSeries;
 
     public void setStage(Stage stage) {
         stage.setTitle(TITLE);
@@ -72,6 +74,8 @@ public class Controller {
         stage.setScene(main);
         stage.setMaximized(true);
         stage.show();
+
+        this.stateInit();
     }
 
     public Controller() {
@@ -91,9 +95,9 @@ public class Controller {
         vbox.setSpacing(8);
 
         Text title = new Text("Training data");
-        this.traningDataList = new ListView<String>();
-        this.traningDataList.setPrefHeight(910);
-        vbox.getChildren().addAll(title, this.traningDataList);
+        this.trainingDataList = new ListView<String>();
+        this.trainingDataList.setPrefHeight(910);
+        vbox.getChildren().addAll(title, this.trainingDataList);
 
         VBox vbox2 = new VBox();
         vbox2.setPadding(new Insets(10));
@@ -123,6 +127,7 @@ public class Controller {
 
             if (file != null) {
                 try {
+                    this.stateInit();
                     this.loadTrainingFile(file);
                 } catch (IOException e1) {
                     e1.printStackTrace();
@@ -131,7 +136,6 @@ public class Controller {
         });
 
         this.trainButton = new Button("Train");
-        this.trainButton.setDisable(true);
         this.trainButton.setOnAction((e) -> {
             this.train(this.trainingData, Integer.parseInt(precisionText.getText()));
         });
@@ -143,7 +147,6 @@ public class Controller {
         text.setTranslateX(10);
 
         this.buttonTesting = new Button("Load testing data");
-        buttonTesting.setDisable(true);
         buttonTesting.setPrefSize(150, 20);
         buttonTesting.setOnAction((e) -> {
             FileChooser fileChooser = new FileChooser();
@@ -158,9 +161,19 @@ public class Controller {
             }
         });
 
-        hbox.getChildren().addAll(buttonCurrent, this.trainButton, text, precisionText, buttonTesting);
+        hbox.getChildren().addAll(buttonCurrent, text, precisionText, this.trainButton, buttonTesting);
 
         return hbox;
+    }
+
+    private void clearPlot() {
+        this.testPositiveSeries = new XYChart.Series();
+        this.testPositiveSeries.setName("Test Positive");
+
+        this.testNegativeSeries = new XYChart.Series();
+        this.testNegativeSeries.setName("Test Negative");
+
+        this.sc.getData().clear();
     }
 
     private String loadFileContent(File file) throws IOException {
@@ -194,19 +207,18 @@ public class Controller {
         ObservableList<String> items = FXCollections.observableArrayList();
 
         for (List<Double> pos : positive) {
-            String str = String.format("%f; %f", pos.get(0), pos.get(1));
+            String str = String.format("+\t%f; %f", pos.get(0), pos.get(1));
             items.add(str);
         }
 
         for (List<Double> neg : negative) {
-            String str = String.format("%f; %f", neg.get(0), neg.get(1));
+            String str = String.format("-\t%f; %f", neg.get(0), neg.get(1));
             items.add(str);
         }
 
-        this.traningDataList.setItems(items);
+        this.trainingDataList.setItems(items);
         this.plotTrainingData(trainingData);
-        this.trainButton.setDisable(false);
-        this.buttonTesting.setDisable(false);
+        this.stateTrainingLoaded();
     }
 
     private void plotTrainingData(TrainingData trainingData) throws IOException {
@@ -240,40 +252,32 @@ public class Controller {
 
     private void processTestingData(TestingData testingData) throws IOException {
         List<List<Double>> test = testingData.getTest();
-
         ObservableList<String> items = FXCollections.observableArrayList();
 
+        if(!this.sc.getData().contains(this.testPositiveSeries)) {
+            sc.getData().addAll(this.testPositiveSeries, this.testNegativeSeries);
+        }
+
         for (List<Double> pos : test) {
-            String str = String.format("%f; %f", pos.get(0), pos.get(1));
+            boolean positive = this.plotTestingData(pos);
+            String str = String.format("%s\t%f; %f", positive ? "+" : "-", pos.get(0), pos.get(1));
             items.add(str);
         }
 
         this.testingDataList.setItems(items);
-        this.plotTestingData(testingData);
     }
 
-    private void plotTestingData(TestingData testingData) throws IOException {
-        XYChart.Series series1 = new XYChart.Series();
-        series1.setName("Test Positive");
+    private boolean plotTestingData(List<Double> data) throws IOException {
+        RealVector t = this.singleDoubleToRealVector(data);
+        SupportVectorMachine.Classification classification = svm.classify(t);
 
-        XYChart.Series series2 = new XYChart.Series();
-        series2.setName("Test Negative");
-
-        FXMLLoader loader = new FXMLLoader(Main.class.getClassLoader().getResource("fxml/sample.fxml"));
-        Parent root = loader.load();
-        Controller controller = loader.getController();
-
-        for (RealVector t : this.doubleToRealVector(testingData.getTest())) {
-            SupportVectorMachine.Classification classification = svm.classify(t);
-
-            if (classification.equals(SupportVectorMachine.Classification.POSITIVE)) {
-                series1.getData().add(new XYChart.Data(t.toArray()[0], t.toArray()[1]));
-            } else {
-                series2.getData().add(new XYChart.Data(t.toArray()[0], t.toArray()[1]));
-            }
+        if (classification.equals(SupportVectorMachine.Classification.POSITIVE)) {
+            this.testPositiveSeries.getData().add(new XYChart.Data(t.toArray()[0], t.toArray()[1]));
+            return true;
+        } else {
+            this.testNegativeSeries.getData().add(new XYChart.Data(t.toArray()[0], t.toArray()[1]));
+            return false;
         }
-
-        sc.getData().addAll(series1, series2);
     }
 
 
@@ -299,14 +303,15 @@ public class Controller {
             Platform.runLater(() -> {
                 if (finalFound) {
                     this.plotSvm();
+                    this.stateTrained();
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR, "Solution not found");
                     alert.showAndWait();
+                    this.stateTrainingLoaded();
                 }
 
                 this.pane.setDisable(false);
                 this.stackPane.getChildren().remove(box);
-                this.trainButton.setDisable(true);
             });
 
         });
@@ -345,14 +350,39 @@ public class Controller {
         List<RealVector> ret = new ArrayList<>();
 
         for (List<Double> arr : list) {
-            double[] doubles = new double[arr.size()];
-            for (int i = 0; i < arr.size(); i++) {
-                doubles[i] = arr.get(i);
-            }
-
-            ret.add(new ArrayRealVector(doubles));
+            ret.add(this.singleDoubleToRealVector(arr));
         }
 
         return ret;
+    }
+
+    private RealVector singleDoubleToRealVector(List<Double> list) {
+        double[] doubles = new double[list.size()];
+
+        for (int i = 0; i < list.size(); i++) {
+            doubles[i] = list.get(i);
+        }
+
+        return new ArrayRealVector(doubles);
+
+    }
+
+    private void stateInit() {
+        this.trainButton.setDisable(true);
+        this.buttonTesting.setDisable(true);
+
+        this.clearPlot();
+        this.testingDataList.getItems().clear();
+        this.trainingDataList.getItems().clear();
+    }
+
+    private void stateTrainingLoaded() {
+        this.trainButton.setDisable(false);
+        this.buttonTesting.setDisable(true);
+    }
+
+    private void stateTrained() {
+        this.trainButton.setDisable(true);
+        this.buttonTesting.setDisable(false);
     }
 }

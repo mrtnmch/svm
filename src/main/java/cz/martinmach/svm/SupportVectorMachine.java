@@ -89,13 +89,6 @@ public class SupportVectorMachine {
             }
         }
 
-        Double[] stepSizes2 = {
-                this.max * 0.1,
-                this.max * 0.01,
-                this.max * 0.001,
-                this.max * 0.0001,
-        };
-
         Double[] stepSizes = new Double[precisionSteps];
         for (int i = 1; i <= precisionSteps; i++) {
             stepSizes[i - 1] = Math.pow(0.1, i) * this.max;
