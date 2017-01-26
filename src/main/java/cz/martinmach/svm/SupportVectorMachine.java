@@ -12,34 +12,21 @@ import java.util.*;
 public class SupportVectorMachine {
 
 
+    private List<RealVector> positive;
+    private List<RealVector> negative;
     private RealVector w;
     private double b;
-    private List<RealVector> negative;
-    private List<RealVector> positive;
+    private double min;
+    private double max;
 
+    private static final double RANGE_MULTIPLE = 5;
+    private static final double B_MULTIPLE = 5;
     private final static double[][] TRANSFORMS = {
             {1, 1},
             {-1, 1},
             {-1, -1},
             {1, -1},
     };
-    private double max;
-    private double min;
-
-    public enum Classification {
-        POSITIVE,
-        NEGATIVE,
-    }
-
-    public class Tuple<T> {
-        public Tuple(T first, T second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public final T first;
-        public final T second;
-    }
 
     public SupportVectorMachine() {
 
@@ -95,8 +82,6 @@ public class SupportVectorMachine {
             stepSizes[i - 1] = Math.pow(0.1, i) * this.max;
         }
 
-        double bRangeMultiple = 5;
-        double bMultiple = 5;
         double latestOptimum = this.max * 10;
         boolean optimized;
 
@@ -106,9 +91,9 @@ public class SupportVectorMachine {
 
             while (!optimized) {
                 List<Double> steps = this.stepper(
-                        -1 * (this.max * bRangeMultiple),
-                        this.max * bRangeMultiple,
-                        step * bMultiple
+                        -1 * (this.max * RANGE_MULTIPLE),
+                        this.max * RANGE_MULTIPLE,
+                        step * B_MULTIPLE
                 );
 
                 for (double b2 : steps) {
@@ -205,12 +190,30 @@ public class SupportVectorMachine {
 
     public Classification classify(RealVector feature) {
         double result = feature.dotProduct(this.w) + this.b;
-        double[] pos = feature.toArray();
         return result < 0 ? Classification.NEGATIVE : Classification.POSITIVE;
     }
+
+    /*
+        Help classes
+     */
 
     protected class OptDictItem {
         public RealVector wt;
         public double b;
+    }
+
+    public enum Classification {
+        POSITIVE,
+        NEGATIVE,
+    }
+
+    public class Tuple<T> {
+        public Tuple(T first, T second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        public final T first;
+        public final T second;
     }
 }
