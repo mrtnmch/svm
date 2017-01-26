@@ -36,6 +36,7 @@ public class SupportVectorMachine {
             this.first = first;
             this.second = second;
         }
+
         public final T first;
         public final T second;
     }
@@ -44,7 +45,7 @@ public class SupportVectorMachine {
 
     }
 
-    public List<Tuple<Tuple<Double>>> getSupportVectors(){
+    public List<Tuple<Tuple<Double>>> getSupportVectors() {
         List<Tuple<Tuple<Double>>> ret = new ArrayList<>();
 
         double min = this.min * 0.9;
@@ -64,7 +65,7 @@ public class SupportVectorMachine {
 
     protected double hyperplane(double x, int v) {
         double[] array = this.w.toArray();
-        return (-array[0]*x-this.b+v) / array[1];
+        return (-array[0] * x - this.b + v) / array[1];
     }
 
     public void train(List<RealVector> negative, List<RealVector> positive, int precisionSteps) throws SolutionNotFoundException {
@@ -121,18 +122,21 @@ public class SupportVectorMachine {
 
                             if (!(re >= 1)) {
                                 foundOption = false;
+                                break;
                             }
                         }
 
-                        for (RealVector xi : positive) {
-                            double re = 1 * (wtv.dotProduct(xi) + b2);
+                        if (foundOption) {
+                            for (RealVector xi : positive) {
+                                double re = 1 * (wtv.dotProduct(xi) + b2);
 
-                            if (!(re >= 1)) {
-                                foundOption = false;
+                                if (!(re >= 1)) {
+                                    foundOption = false;
+                                }
                             }
                         }
 
-                        if(foundOption) {
+                        if (foundOption) {
                             OptDictItem item = new OptDictItem();
                             item.b = b2;
                             item.wt = wtv;
@@ -142,7 +146,7 @@ public class SupportVectorMachine {
                     }
                 }
 
-                if(w2.toArray()[0] < 0) {
+                if (w2.toArray()[0] < 0) {
                     optimized = true;
                 } else {
                     w2 = this.addToVector(w2, -step);
@@ -157,14 +161,14 @@ public class SupportVectorMachine {
     }
 
     private OptDictItem getChoice(HashMap<Double, OptDictItem> optDict) throws SolutionNotFoundException {
-        if(optDict.size() == 0) {
+        if (optDict.size() == 0) {
             throw new SolutionNotFoundException();
         }
 
         Double min = new ArrayList<>(optDict.keySet()).get(0);
         for (Double key : optDict.keySet()) {
 
-            if(key < min) {
+            if (key < min) {
                 min = key;
             }
         }
