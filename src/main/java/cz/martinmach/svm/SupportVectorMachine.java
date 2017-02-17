@@ -28,8 +28,23 @@ public class SupportVectorMachine {
             {1, -1},
     };
 
-    public SupportVectorMachine() {
+    private PointPair getVector(int multiple) {
+        double min = this.min * 0.9;
+        double max = this.max * 1.1;
 
+        return new PointPair(min, max, this.hyperplane(min, multiple), this.hyperplane(max, multiple));
+    }
+
+    public PointPair getMainVector() {
+        return this.getVector(0);
+    }
+
+    public PointPair getPositiveVector() {
+        return this.getVector(1);
+    }
+
+    public PointPair getNegativeVector() {
+        return this.getVector(-1);
     }
 
     public List<Tuple<Tuple<Double>>> getSupportVectors() {
@@ -59,28 +74,14 @@ public class SupportVectorMachine {
         this.negative = negative;
         this.positive = positive;
 
-        HashMap<Double, OptDictItem> optDict = new LinkedHashMap<>();
+        HashMap<Double, Option> optDict = new LinkedHashMap<>();
         List<RealVector> merged = new ArrayList<>(negative);
         merged.addAll(positive);
 
-        this.max = Double.MIN_VALUE;
-        this.min = Double.MAX_VALUE;
+        this.max = this.findMax(merged);
+        this.min = this.findMin(merged);
 
-        for (RealVector vector : merged) {
-            double[] array = vector.toArray();
-            for (double item : array) {
-                if (item > max) {
-                    max = item;
-                } else if (item < min) {
-                    min = item;
-                }
-            }
-        }
-
-        Double[] stepSizes = new Double[precisionSteps];
-        for (int i = 1; i <= precisionSteps; i++) {
-            stepSizes[i - 1] = Math.pow(0.1, i) * this.max;
-        }
+        Double[] stepSizes = this.generateStepSizes(precisionSteps, this.max);
 
         double latestOptimum = this.max * 10;
         boolean optimized;
@@ -90,46 +91,7 @@ public class SupportVectorMachine {
             optimized = false;
 
             while (!optimized) {
-                List<Double> steps = this.stepper(
-                        -1 * (this.max * RANGE_MULTIPLE),
-                        this.max * RANGE_MULTIPLE,
-                        step * B_MULTIPLE
-                );
-
-                for (double b2 : steps) {
-                    for (double[] transformation : TRANSFORMS) {
-                        double[] wt = this.arrayScale(w2.toArray(), transformation);
-                        RealVector wtv = new ArrayRealVector(wt);
-                        boolean foundOption = true;
-
-                        for (RealVector xi : negative) {
-                            double re = (-1) * (wtv.dotProduct(xi) + b2);
-
-                            if (!(re >= 1)) {
-                                foundOption = false;
-                                break;
-                            }
-                        }
-
-                        if (foundOption) {
-                            for (RealVector xi : positive) {
-                                double re = 1 * (wtv.dotProduct(xi) + b2);
-
-                                if (!(re >= 1)) {
-                                    foundOption = false;
-                                }
-                            }
-                        }
-
-                        if (foundOption) {
-                            OptDictItem item = new OptDictItem();
-                            item.b = b2;
-                            item.wt = wtv;
-                            double norm = wtv.getNorm();
-                            optDict.put(norm, item);
-                        }
-                    }
-                }
+                findOption(negative, positive, optDict, step, w2);
 
                 if (w2.toArray()[0] < 0) {
                     optimized = true;
@@ -138,14 +100,95 @@ public class SupportVectorMachine {
                 }
             }
 
-            OptDictItem choice = this.getChoice(optDict);
-            this.w = choice.wt;
-            this.b = choice.b;
+            Option choice = this.getMinimalOption(optDict);
+            this.w = choice.getW();
+            this.b = choice.getB();
             latestOptimum = this.w.toArray()[0] + step * 2;
         }
     }
 
-    private OptDictItem getChoice(HashMap<Double, OptDictItem> optDict) throws SolutionNotFoundException {
+    private void findOption(List<RealVector> negative, List<RealVector> positive, HashMap<Double, Option> optDict, double step, RealVector w2) {
+        List<Double> steps = this.stepper(
+                -1 * (this.max * RANGE_MULTIPLE),
+                this.max * RANGE_MULTIPLE,
+                step * B_MULTIPLE
+        );
+
+        for (double b2 : steps) {
+            for (double[] transformation : TRANSFORMS) {
+                double[] wt = this.arrayScale(w2.toArray(), transformation);
+                RealVector wtv = new ArrayRealVector(wt);
+                boolean foundOption = true;
+
+                for (RealVector xi : negative) {
+                    if(!tryFit(wtv, xi, b2, -1)) {
+                        foundOption = false;
+                        break;
+                    }
+                }
+
+                if (foundOption) {
+                    for (RealVector xi : positive) {
+                        if (!tryFit(wtv, xi, b2, 1)) {
+                            foundOption = false;
+                        }
+                    }
+                }
+
+                if (foundOption) {
+                    Option item = new Option(wtv, b2);
+                    double norm = wtv.getNorm();
+                    optDict.put(norm, item);
+                }
+            }
+        }
+    }
+
+    private boolean tryFit(RealVector wtv, RealVector xi, double margin, int scale) {
+        return scale * (wtv.dotProduct(xi) + margin) >= 1;
+    }
+
+    private Double[] generateStepSizes(int precisionSteps, double max) {
+        Double[] stepSizes = new Double[precisionSteps];
+
+        for (int i = 1; i <= precisionSteps; i++) {
+            stepSizes[i - 1] = Math.pow(0.1, i) * max;
+        }
+
+        return stepSizes;
+    }
+
+    private double findMin(List<RealVector> merged) {
+        double min = Double.MAX_VALUE;
+
+        for (RealVector vector : merged) {
+            double[] array = vector.toArray();
+            for (double item : array) {
+                if (item < min) {
+                    min = item;
+                }
+            }
+        }
+
+        return min;
+    }
+
+    private double findMax(List<RealVector> merged) {
+        double max = Double.MIN_VALUE;
+
+        for (RealVector vector : merged) {
+            double[] array = vector.toArray();
+            for (double item : array) {
+                if (item > max) {
+                    max = item;
+                }
+            }
+        }
+
+        return max;
+    }
+
+    private Option getMinimalOption(HashMap<Double, Option> optDict) throws SolutionNotFoundException {
         if (optDict.size() == 0) {
             throw new SolutionNotFoundException();
         }
@@ -169,7 +212,7 @@ public class SupportVectorMachine {
         return new ArrayRealVector(array);
     }
 
-    protected List<Double> stepper(double from, double to, double step) {
+    private List<Double> stepper(double from, double to, double step) {
         List<Double> ret = new ArrayList<>();
 
         for (double i = from; i <= to; i += step) {
@@ -179,7 +222,7 @@ public class SupportVectorMachine {
         return ret;
     }
 
-    protected double[] arrayScale(double[] array, double[] scale) {
+    private double[] arrayScale(double[] array, double[] scale) {
         double[] ret = Arrays.copyOf(array, array.length);
         for (int i = 0; i < ret.length; i++) {
             ret[i] = ret[i] * scale[i];
@@ -191,20 +234,6 @@ public class SupportVectorMachine {
     public Classification classify(RealVector feature) {
         double result = feature.dotProduct(this.w) + this.b;
         return result < 0 ? Classification.NEGATIVE : Classification.POSITIVE;
-    }
-
-    /*
-        Help classes
-     */
-
-    protected class OptDictItem {
-        public RealVector wt;
-        public double b;
-    }
-
-    public enum Classification {
-        POSITIVE,
-        NEGATIVE,
     }
 
     public class Tuple<T> {

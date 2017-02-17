@@ -1,6 +1,7 @@
 package cz.martinmach;
 
 import com.google.gson.Gson;
+import cz.martinmach.svm.Classification;
 import cz.martinmach.svm.SolutionNotFoundException;
 import cz.martinmach.svm.SupportVectorMachine;
 import javafx.application.Platform;
@@ -269,9 +270,9 @@ public class Controller {
 
     private boolean plotTestingData(List<Double> data) throws IOException {
         RealVector t = this.singleDoubleToRealVector(data);
-        SupportVectorMachine.Classification classification = svm.classify(t);
+        Classification classification = svm.classify(t);
 
-        if (classification.equals(SupportVectorMachine.Classification.POSITIVE)) {
+        if (classification.equals(Classification.POSITIVE)) {
             this.testPositiveSeries.getData().add(new XYChart.Data(t.toArray()[0], t.toArray()[1]));
             return true;
         } else {
