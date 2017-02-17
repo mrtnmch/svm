@@ -32,7 +32,7 @@ public class SupportVectorMachine {
         double min = this.min * 0.9;
         double max = this.max * 1.1;
 
-        return new PointPair(min, max, this.hyperplane(min, multiple), this.hyperplane(max, multiple));
+        return new PointPair(min, this.hyperplane(min, multiple), max, this.hyperplane(max, multiple));
     }
 
     public PointPair getMainVector() {
@@ -47,25 +47,7 @@ public class SupportVectorMachine {
         return this.getVector(-1);
     }
 
-    public List<Tuple<Tuple<Double>>> getSupportVectors() {
-        List<Tuple<Tuple<Double>>> ret = new ArrayList<>();
-
-        double min = this.min * 0.9;
-        double max = this.max * 1.1;
-
-        Tuple<Tuple<Double>> p1 = new Tuple<>(new Tuple<Double>(min, max), new Tuple(this.hyperplane(min, 1), this.hyperplane(max, 1)));
-        ret.add(p1);
-
-        Tuple<Tuple<Double>> pm1 = new Tuple<>(new Tuple<Double>(min, max), new Tuple(this.hyperplane(min, -1), this.hyperplane(max, -1)));
-        ret.add(pm1);
-
-        Tuple<Tuple<Double>> p = new Tuple<>(new Tuple<Double>(min, max), new Tuple(this.hyperplane(min, 0), this.hyperplane(max, 0)));
-        ret.add(p);
-
-        return ret;
-    }
-
-    protected double hyperplane(double x, int v) {
+    private double hyperplane(double x, int v) {
         double[] array = this.w.toArray();
         return (-array[0] * x - this.b + v) / array[1];
     }
@@ -234,15 +216,5 @@ public class SupportVectorMachine {
     public Classification classify(RealVector feature) {
         double result = feature.dotProduct(this.w) + this.b;
         return result < 0 ? Classification.NEGATIVE : Classification.POSITIVE;
-    }
-
-    public class Tuple<T> {
-        public Tuple(T first, T second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public final T first;
-        public final T second;
     }
 }

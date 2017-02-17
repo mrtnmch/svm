@@ -2,6 +2,7 @@ package cz.martinmach;
 
 import com.google.gson.Gson;
 import cz.martinmach.svm.Classification;
+import cz.martinmach.svm.PointPair;
 import cz.martinmach.svm.SolutionNotFoundException;
 import cz.martinmach.svm.SupportVectorMachine;
 import javafx.application.Platform;
@@ -321,7 +322,9 @@ public class Controller {
     }
 
     private void plotSvm() {
-        List<SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>>> sv = this.svm.getSupportVectors();
+        PointPair mainVector = this.svm.getMainVector();
+        PointPair positiveVector = this.svm.getPositiveVector();
+        PointPair negativeVector = this.svm.getNegativeVector();
 
         XYChart.Series series5 = new XYChart.Series();
         series5.setName("Vector");
@@ -332,17 +335,14 @@ public class Controller {
         XYChart.Series series7 = new XYChart.Series();
         series7.setName("Vector-1");
 
-        SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>> tuple = sv.get(2);
-        series5.getData().add(new XYChart.Data<>(tuple.first.first, tuple.second.first));
-        series5.getData().add(new XYChart.Data<>(tuple.first.second, tuple.second.second));
+        series5.getData().add(new XYChart.Data<>(mainVector.getFromX(), mainVector.getFromY()));
+        series5.getData().add(new XYChart.Data<>(mainVector.getToX(), mainVector.getToY()));
 
-        SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>> tuple0 = sv.get(0);
-        series6.getData().add(new XYChart.Data<>(tuple0.first.first, tuple0.second.first));
-        series6.getData().add(new XYChart.Data<>(tuple0.first.second, tuple0.second.second));
+        series6.getData().add(new XYChart.Data<>(positiveVector.getFromX(), positiveVector.getFromY()));
+        series6.getData().add(new XYChart.Data<>(positiveVector.getToX(), positiveVector.getToY()));
 
-        SupportVectorMachine.Tuple<SupportVectorMachine.Tuple<Double>> tuple1 = sv.get(1);
-        series7.getData().add(new XYChart.Data<>(tuple1.first.first, tuple1.second.first));
-        series7.getData().add(new XYChart.Data<>(tuple1.first.second, tuple1.second.second));
+        series7.getData().add(new XYChart.Data<>(negativeVector.getFromX(), negativeVector.getFromY()));
+        series7.getData().add(new XYChart.Data<>(negativeVector.getToX(), negativeVector.getToY()));
 
         sc.getData().addAll(series5, series6, series7);
     }
