@@ -10,10 +10,6 @@ import java.util.*;
  * Created by mmx on 8.1.17.
  */
 public class SupportVectorMachine {
-
-
-    private List<RealVector> positive;
-    private List<RealVector> negative;
     private RealVector w;
     private double b;
     private double min;
@@ -52,9 +48,6 @@ public class SupportVectorMachine {
     }
 
     public void train(List<RealVector> negative, List<RealVector> positive, int precisionSteps) throws SolutionNotFoundException {
-        this.negative = negative;
-        this.positive = positive;
-
         HashMap<Double, Option> options = new LinkedHashMap<>();
         List<RealVector> merged = new ArrayList<>(negative);
         merged.addAll(positive);
