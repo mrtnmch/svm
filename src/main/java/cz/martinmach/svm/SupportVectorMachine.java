@@ -48,8 +48,7 @@ public class SupportVectorMachine {
     }
 
     private double hyperplane(double x, int v) {
-        double[] array = this.w.toArray();
-        return (-array[0] * x - this.b + v) / array[1];
+        return (-this.w.getEntry(0) * x - this.b + v) / this.w.getEntry(1);
     }
 
     public void train(List<RealVector> negative, List<RealVector> positive, int precisionSteps) throws SolutionNotFoundException {
@@ -75,7 +74,7 @@ public class SupportVectorMachine {
             while (!optimized) {
                 findOption(negative, positive, optDict, step, w2);
 
-                if (w2.toArray()[0] < 0) {
+                if (w2.getEntry(0) < 0) {
                     optimized = true;
                 } else {
                     w2 = this.addToVector(w2, -step);
@@ -85,7 +84,7 @@ public class SupportVectorMachine {
             Option choice = this.getMinimalOption(optDict);
             this.w = choice.getW();
             this.b = choice.getB();
-            latestOptimum = this.w.toArray()[0] + step * 2;
+            latestOptimum = this.w.getEntry(0) + step * 2;
         }
     }
 
@@ -98,12 +97,11 @@ public class SupportVectorMachine {
 
         for (double b2 : steps) {
             for (double[] transformation : TRANSFORMS) {
-                double[] wt = this.arrayScale(w2.toArray(), transformation);
-                RealVector wtv = new ArrayRealVector(wt);
+                RealVector wtv = this.vectorScale(w2, transformation);
                 boolean foundOption = true;
 
                 for (RealVector xi : negative) {
-                    if(!tryFit(wtv, xi, b2, -1)) {
+                    if (!tryFit(wtv, xi, b2, -1)) {
                         foundOption = false;
                         break;
                     }
@@ -144,10 +142,9 @@ public class SupportVectorMachine {
         double min = Double.MAX_VALUE;
 
         for (RealVector vector : merged) {
-            double[] array = vector.toArray();
-            for (double item : array) {
-                if (item < min) {
-                    min = item;
+            for (int i = 0; i < vector.getDimension(); i++) {
+                if (vector.getEntry(i) < min) {
+                    min = vector.getEntry(i);
                 }
             }
         }
@@ -159,10 +156,9 @@ public class SupportVectorMachine {
         double max = Double.MIN_VALUE;
 
         for (RealVector vector : merged) {
-            double[] array = vector.toArray();
-            for (double item : array) {
-                if (item > max) {
-                    max = item;
+            for (int i = 0; i < vector.getDimension(); i++) {
+                if (vector.getEntry(i) > max) {
+                    max = vector.getEntry(i);
                 }
             }
         }
@@ -187,11 +183,13 @@ public class SupportVectorMachine {
     }
 
     private RealVector addToVector(RealVector w, double v) {
-        double[] array = w.toArray();
-        for (int i = 0; i < array.length; i++) {
-            array[i] += v;
+        RealVector ret = new ArrayRealVector(w.getDimension());
+
+        for (int i = 0; i < w.getDimension(); i++) {
+            ret.setEntry(i, w.getEntry(i) + v);
         }
-        return new ArrayRealVector(array);
+
+        return ret;
     }
 
     private List<Double> stepper(double from, double to, double step) {
@@ -204,11 +202,13 @@ public class SupportVectorMachine {
         return ret;
     }
 
-    private double[] arrayScale(double[] array, double[] scale) {
-        double[] ret = Arrays.copyOf(array, array.length);
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = ret[i] * scale[i];
+    private RealVector vectorScale(RealVector vector, double[] scale) {
+        RealVector ret = new ArrayRealVector(vector.getDimension());
+
+        for (int i = 0; i < vector.getDimension(); i++) {
+            ret.setEntry(i, vector.getEntry(i) * scale[i]);
         }
+
         return ret;
     }
 
