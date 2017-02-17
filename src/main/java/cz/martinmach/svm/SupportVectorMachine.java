@@ -55,7 +55,7 @@ public class SupportVectorMachine {
         this.negative = negative;
         this.positive = positive;
 
-        HashMap<Double, Option> optDict = new LinkedHashMap<>();
+        HashMap<Double, Option> options = new LinkedHashMap<>();
         List<RealVector> merged = new ArrayList<>(negative);
         merged.addAll(positive);
 
@@ -64,68 +64,68 @@ public class SupportVectorMachine {
 
         Double[] stepSizes = this.generateStepSizes(precisionSteps, this.max);
 
-        double latestOptimum = this.max * 10;
-        boolean optimized;
+        double previousOptimum = this.max * 10;
+        boolean isOptimized;
 
         for (double step : stepSizes) {
-            RealVector w2 = new ArrayRealVector(new double[]{latestOptimum, latestOptimum});
-            optimized = false;
+            RealVector wTest = new ArrayRealVector(new double[]{previousOptimum, previousOptimum});
+            isOptimized = false;
 
-            while (!optimized) {
-                findOption(negative, positive, optDict, step, w2);
+            while (!isOptimized) {
+                findOption(negative, positive, options, step, wTest);
 
-                if (w2.getEntry(0) < 0) {
-                    optimized = true;
+                if (wTest.getEntry(0) < 0) {
+                    isOptimized = true;
                 } else {
-                    w2 = this.addToVector(w2, -step);
+                    wTest = this.addToVector(wTest, -step);
                 }
             }
 
-            Option choice = this.getMinimalOption(optDict);
-            this.w = choice.getW();
-            this.b = choice.getB();
-            latestOptimum = this.w.getEntry(0) + step * 2;
+            Option minimalOption = this.getMinimalOption(options);
+            this.w = minimalOption.getW();
+            this.b = minimalOption.getB();
+            previousOptimum = this.w.getEntry(0) + step * 2;
         }
     }
 
-    private void findOption(List<RealVector> negative, List<RealVector> positive, HashMap<Double, Option> optDict, double step, RealVector w2) {
+    private void findOption(List<RealVector> negative, List<RealVector> positive, HashMap<Double, Option> options, double step, RealVector wTest) {
         List<Double> steps = this.stepper(
                 -1 * (this.max * RANGE_MULTIPLE),
                 this.max * RANGE_MULTIPLE,
                 step * B_MULTIPLE
         );
 
-        for (double b2 : steps) {
+        for (double singleStep : steps) {
             for (double[] transformation : TRANSFORMS) {
-                RealVector wtv = this.vectorScale(w2, transformation);
-                boolean foundOption = true;
+                RealVector wTestScaled = this.vectorScale(wTest, transformation);
+                boolean validOption = true;
 
-                for (RealVector xi : negative) {
-                    if (!tryFit(wtv, xi, b2, -1)) {
-                        foundOption = false;
+                for (RealVector neg : negative) {
+                    if (!tryFit(wTestScaled, neg, singleStep, -1)) {
+                        validOption = false;
                         break;
                     }
                 }
 
-                if (foundOption) {
-                    for (RealVector xi : positive) {
-                        if (!tryFit(wtv, xi, b2, 1)) {
-                            foundOption = false;
+                if (validOption) {
+                    for (RealVector pos : positive) {
+                        if (!tryFit(wTestScaled, pos, singleStep, 1)) {
+                            validOption = false;
                         }
                     }
                 }
 
-                if (foundOption) {
-                    Option item = new Option(wtv, b2);
-                    double norm = wtv.getNorm();
-                    optDict.put(norm, item);
+                if (validOption) {
+                    Option item = new Option(wTestScaled, singleStep);
+                    double norm = wTestScaled.getNorm();
+                    options.put(norm, item);
                 }
             }
         }
     }
 
-    private boolean tryFit(RealVector wtv, RealVector xi, double margin, int scale) {
-        return scale * (wtv.dotProduct(xi) + margin) >= 1;
+    private boolean tryFit(RealVector wTest, RealVector vector, double margin, int scale) {
+        return scale * (wTest.dotProduct(vector) + margin) >= 1;
     }
 
     private Double[] generateStepSizes(int precisionSteps, double max) {
@@ -166,20 +166,20 @@ public class SupportVectorMachine {
         return max;
     }
 
-    private Option getMinimalOption(HashMap<Double, Option> optDict) throws SolutionNotFoundException {
-        if (optDict.size() == 0) {
+    private Option getMinimalOption(HashMap<Double, Option> options) throws SolutionNotFoundException {
+        if (options.size() == 0) {
             throw new SolutionNotFoundException();
         }
 
-        Double min = new ArrayList<>(optDict.keySet()).get(0);
-        for (Double key : optDict.keySet()) {
+        Double min = new ArrayList<>(options.keySet()).get(0);
+        for (Double key : options.keySet()) {
 
             if (key < min) {
                 min = key;
             }
         }
 
-        return optDict.get(min);
+        return options.get(min);
     }
 
     private RealVector addToVector(RealVector w, double v) {
@@ -211,7 +211,6 @@ public class SupportVectorMachine {
 
         return ret;
     }
-
 
     public Classification classify(RealVector feature) {
         double result = feature.dotProduct(this.w) + this.b;
