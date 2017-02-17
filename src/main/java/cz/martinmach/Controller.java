@@ -1,6 +1,5 @@
 package cz.martinmach;
 
-import com.google.gson.Gson;
 import cz.martinmach.svm.Classification;
 import cz.martinmach.svm.PointPair;
 import cz.martinmach.svm.SolutionNotFoundException;
@@ -29,14 +28,12 @@ import org.apache.commons.math3.linear.RealVector;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Controller {
 
+    private final DataFileFactory dataFileFactory;
     private SupportVectorMachine svm;
     private LineChart<Number, Number> sc;
     private BorderPane pane;
@@ -81,6 +78,7 @@ public class Controller {
     }
 
     public Controller() {
+        this.dataFileFactory = new DataFileFactory();
         this.svm = new SupportVectorMachine();
     }
 
@@ -131,8 +129,8 @@ public class Controller {
                 try {
                     this.stateInit();
                     this.loadTrainingFile(file);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
+                } catch (IOException | UnknownDataFileException e1) {
+                    this.showError(e1.getMessage());
                 }
             }
         });
@@ -157,8 +155,8 @@ public class Controller {
             if (file != null) {
                 try {
                     this.loadTestingFile(file);
-                } catch (IOException e1) {
-                    e1.printStackTrace();
+                } catch (IOException | UnknownDataFileException e1) {
+                    this.showError(e1.getMessage());
                 }
             }
         });
@@ -178,27 +176,13 @@ public class Controller {
         this.sc.getData().clear();
     }
 
-    private String loadFileContent(File file) throws IOException {
-        final String EoL = System.getProperty("line.separator");
-        List<String> lines = Files.readAllLines(Paths.get(file.getAbsolutePath()), Charset.defaultCharset());
-
-        StringBuilder sb = new StringBuilder();
-        for (String line : lines) {
-            sb.append(line).append(EoL);
-        }
-
-        return sb.toString();
-    }
-
-    private void loadTestingFile(File file) throws IOException {
-        Gson g = new Gson();
-        this.testingData = g.fromJson(this.loadFileContent(file), TestingData.class);
+    private void loadTestingFile(File file) throws IOException, UnknownDataFileException {
+        this.testingData = this.dataFileFactory.loadTestingData(file);
         this.processTestingData(testingData);
     }
 
-    private void loadTrainingFile(File file) throws IOException {
-        Gson g = new Gson();
-        this.trainingData = g.fromJson(this.loadFileContent(file), TrainingData.class);
+    private void loadTrainingFile(File file) throws IOException, UnknownDataFileException {
+        this.trainingData = this.dataFileFactory.loadTrainingData(file);
         this.processTrainingData(trainingData);
     }
 
@@ -307,8 +291,7 @@ public class Controller {
                     this.plotSvm();
                     this.stateTrained();
                 } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR, "Solution not found");
-                    alert.showAndWait();
+                    this.showError("Solution not found");
                     this.stateTrainingLoaded();
                 }
 
@@ -385,5 +368,10 @@ public class Controller {
     private void stateTrained() {
         this.trainButton.setDisable(true);
         this.buttonTesting.setDisable(false);
+    }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR, message);
+        alert.showAndWait();
     }
 }
