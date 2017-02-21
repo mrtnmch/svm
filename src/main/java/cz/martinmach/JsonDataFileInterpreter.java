@@ -24,7 +24,7 @@ public class JsonDataFileInterpreter implements DataFileInterpreter {
 
             return data;
         }
-        catch (JsonSyntaxException e) {
+        catch (Exception e) {
             this.throwUnknownDataFileException();
             return null;
         }
@@ -41,7 +41,7 @@ public class JsonDataFileInterpreter implements DataFileInterpreter {
 
             return data;
         }
-        catch (JsonSyntaxException e) {
+        catch (Exception e) {
             this.throwUnknownDataFileException();
             return null;
         }

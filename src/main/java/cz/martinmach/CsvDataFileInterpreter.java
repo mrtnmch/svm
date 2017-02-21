@@ -15,7 +15,7 @@ public class CsvDataFileInterpreter implements DataFileInterpreter {
         List<List<Double>> test = new ArrayList<>();
         String[] lines = this.getLines(content);
 
-        if(lines.length <= 1 || !lines[0].equals("test" + DELIMITER)) {
+        if (lines.length <= 1 || !lines[0].equals("test" + DELIMITER)) {
             this.throwUnknownDataFileException();
         }
 
@@ -33,7 +33,7 @@ public class CsvDataFileInterpreter implements DataFileInterpreter {
         List<List<Double>> neg = new ArrayList<>();
         String[] lines = this.getLines(content);
 
-        if(lines.length <= 1 || !lines[0].equals("negative" + DELIMITER)) {
+        if (lines.length <= 1 || !lines[0].equals("negative" + DELIMITER)) {
             this.throwUnknownDataFileException();
         }
 
@@ -45,7 +45,7 @@ public class CsvDataFileInterpreter implements DataFileInterpreter {
             neg.add(add);
         }
 
-        if(i + 1 >= lines.length) {
+        if (i + 1 >= lines.length) {
             this.throwUnknownDataFileException();
         }
 
@@ -62,14 +62,20 @@ public class CsvDataFileInterpreter implements DataFileInterpreter {
     private List<Double> parseLine(String line) throws UnknownDataFileException {
         String[] split = line.split(DELIMITER);
 
-        if(split.length != 2) {
+        if (split.length != 2) {
             this.throwUnknownDataFileException();
         }
 
-        return new ArrayList<Double>() {{
-            add(Double.parseDouble(split[0]));
-            add(Double.parseDouble(split[1]));
-        }};
+        try {
+
+            return new ArrayList<Double>() {{
+                add(Double.parseDouble(split[0]));
+                add(Double.parseDouble(split[1]));
+            }};
+        } catch (Exception e) {
+            this.throwUnknownDataFileException();
+            return null;
+        }
     }
 
     private String[] getLines(String content) {
