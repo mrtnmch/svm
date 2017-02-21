@@ -137,12 +137,21 @@ public class Controller {
 
         this.trainButton = new Button("Train");
         this.trainButton.setOnAction((e) -> {
-            this.train(this.trainingData, Integer.parseInt(precisionText.getText()));
+            try {
+                this.clearPlot();
+                this.plotTrainingData(this.trainingData);
+                this.train(this.trainingData, Integer.parseInt(precisionText.getText()));
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
         });
         this.trainButton.setPrefSize(100, 20);
         this.precisionText = new TextField("4");
         precisionText.setPrefColumnCount(2);
-        Text text = new Text("Steps: ");
+        precisionText.textProperty().addListener(e -> {
+            this.stateTrainingLoaded();
+        });
+        Text text = new Text("Precision: ");
         text.setTranslateY(5);
         text.setTranslateX(10);
 
@@ -167,6 +176,7 @@ public class Controller {
     }
 
     private void clearPlot() {
+        this.sc.setAnimated(false);
         this.testPositiveSeries = new XYChart.Series();
         this.testPositiveSeries.setName("Test Positive");
 
@@ -174,6 +184,7 @@ public class Controller {
         this.testNegativeSeries.setName("Test Negative");
 
         this.sc.getData().clear();
+        this.sc.setAnimated(true);
     }
 
     private void loadTestingFile(File file) throws IOException, UnknownDataFileException {
@@ -230,9 +241,9 @@ public class Controller {
             series2.getData().add(new XYChart.Data(array.get(0), array.get(1)));
         }
 
-        sc.setAnimated(true);
         sc.setCreateSymbols(true);
         sc.getData().addAll(series1, series2);
+        sc.setAnimated(true);
     }
 
 
