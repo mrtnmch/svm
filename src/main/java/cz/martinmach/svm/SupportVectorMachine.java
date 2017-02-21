@@ -7,7 +7,8 @@ import org.apache.commons.math3.linear.RealVector;
 import java.util.*;
 
 /**
- * Created by mmx on 8.1.17.
+ * Created by Martin Mach <me@martinmach.cz> on 8.1.17.
+ * SVM implementation (2d, mostly for edu purposes).
  */
 public class SupportVectorMachine {
     private RealVector w;
@@ -104,6 +105,7 @@ public class SupportVectorMachine {
                     for (RealVector pos : positive) {
                         if (!tryFit(wTestScaled, pos, singleStep, 1)) {
                             validOption = false;
+                            break;
                         }
                     }
                 }
