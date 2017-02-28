@@ -149,7 +149,9 @@ public class Controller {
         this.precisionText = new TextField("4");
         precisionText.setPrefColumnCount(2);
         precisionText.textProperty().addListener(e -> {
-            this.stateTrainingLoaded();
+            if(this.trainingDataList.getItems().size() > 0) {
+                this.stateTrainingLoaded();
+            }
         });
         Text text = new Text("Precision: ");
         text.setTranslateY(5);

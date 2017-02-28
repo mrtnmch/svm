@@ -16,6 +16,7 @@ public class SupportVectorMachine {
     private double min;
     private double max;
 
+    private static final int DEFAULT_PRECISION = 4;
     private static final double RANGE_MULTIPLE = 5;
     private static final double B_MULTIPLE = 5;
     private final static double[][] TRANSFORMS = {
@@ -26,6 +27,10 @@ public class SupportVectorMachine {
     };
 
     private PointPair getVector(int multiple) {
+        if(this.w == null) {
+            return null;
+        }
+
         double min = this.min * 0.9;
         double max = this.max * 1.1;
 
@@ -49,6 +54,7 @@ public class SupportVectorMachine {
     }
 
     public void train(List<RealVector> negative, List<RealVector> positive, int precisionSteps) throws SolutionNotFoundException {
+        precisionSteps = precisionSteps < 0 ? DEFAULT_PRECISION : precisionSteps;
         HashMap<Double, Option> options = new LinkedHashMap<>();
         List<RealVector> merged = new ArrayList<>(negative);
         merged.addAll(positive);
@@ -208,6 +214,10 @@ public class SupportVectorMachine {
     }
 
     public Classification classify(RealVector feature) {
+        if(this.w == null) {
+            return null;
+        }
+
         double result = feature.dotProduct(this.w) + this.b;
         return result < 0 ? Classification.NEGATIVE : Classification.POSITIVE;
     }
