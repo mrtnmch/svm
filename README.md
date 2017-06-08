@@ -14,7 +14,7 @@ Java implementation of the Support Vector Machine algorithm. Based on [this Pyth
 - [ ] Split the Controller class into more files/classes (yea, I'm aware of that)
 - [ ] Support for 3+D data
 - [ ] Output export
-- [ ] Some minor buges
+- [ ] Some minor bugs
 
 ## Screenshots
 
